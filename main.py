@@ -1,16 +1,22 @@
-import cv2 as cv
-import numpy as np
-from matplotlib import pyplot as plt
-img = cv.imread('sudoku.jpg', 0)
-img = cv.blur(img, (5, 5))
-ret, th1 = cv.threshold(img, 127, 255, cv.THRESH_BINARY)
-th2 = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 11, 2)
-th3 = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
-titles = ['Original Image', 'Global Thresholding (v = 127)',
-          'Adaptive Mean Thresholding', 'Adaptive Gaussian Thresholding']
-images = [img, th1, th2, th3]
-for i in range(4):
-    plt.subplot(2, 2, i+1), plt.imshow(images[i], 'gray')
-    plt.title(titles[i])
-    plt.xticks([]), plt.yticks([])
-plt.show()
+import cv2 as cv2
+
+MIN_IMAGE_SIZE = 450
+MAX_IMAGE_SIZE = 900
+
+original = cv2.imread('boards/board_10.jpg')
+
+height = original.shape[0]
+width = original.shape[1]
+scaled = original
+if height > MAX_IMAGE_SIZE or width > MAX_IMAGE_SIZE:
+    scale = max(height, width) / MAX_IMAGE_SIZE
+    scaled = cv2.resize(original, (int(width / scale), int(height / scale)), 0, 0, cv2.INTER_AREA)
+elif height < MIN_IMAGE_SIZE or width < MIN_IMAGE_SIZE:
+    scale = min(height, width) / MAX_IMAGE_SIZE
+    scaled = cv2.resize(original, (int(width / scale), int(height / scale)), 0, 0, cv2.INTER_CUBIC)
+
+gray = cv2.cvtColor(scaled, cv2.COLOR_BGR2GRAY)
+
+cv2.imshow('Gray', gray)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
