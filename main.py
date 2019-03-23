@@ -5,6 +5,7 @@ import pytesseract as tess
 
 MIN_IMAGE_SIZE = 450
 MAX_IMAGE_SIZE = 900
+CELL_BORDER_BUFFER = 3
 
 def int_try_parse(value):
     try:
@@ -31,9 +32,9 @@ def get_largest_contour(img, output=None):
 def contour_touches_border(contour, width, height):
     for point in (x[0] for x in contour):
         px, py = point[0], point[1]
-        if px ==0 or px == width - 1:
+        if px <= CELL_BORDER_BUFFER or px >= width - CELL_BORDER_BUFFER:
             return True
-        if py == 0 or py == height - 1:
+        if py <= CELL_BORDER_BUFFER or py >= height - CELL_BORDER_BUFFER:
             return True
     return False
 
@@ -79,17 +80,26 @@ def warp_mat(mat, corners):
     return warped
 
 def get_cell_value_contour(cell_mat):
-    contours, _ = cv2.findContours(cell_mat, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cell_height = cell_mat.shape[0]
+    cell_width = cell_mat.shape[1]
+    cell_area = cell_height * cell_width
+    min_area = cell_area * .02
+    largest_contour = None
+    largest_contour_area = 0
+    contours, _ = cv2.findContours(cell_mat, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     for contour in contours:
-        if not contour_touches_border(contour, cell_mat.shape[1], cell_mat.shape[0]):
-            return contour
-    return None
+        if not contour_touches_border(contour, cell_width, cell_height):
+            area = cv2.contourArea(contour)
+            if area > largest_contour_area and area > min_area:
+                largest_contour = contour
+                largest_contour_area = area
+    return largest_contour
 
 def get_roi_from_contour(contour, img):
     x, y, w, h = cv2.boundingRect(contour)
     return img[y:y+h, x:x+w]
 
-original = cv2.imread('boards/board_10.jpg')
+original = cv2.imread('boards/board_21.jpg')
 
 height = original.shape[0]
 width = original.shape[1]
@@ -105,19 +115,17 @@ gray = cv2.cvtColor(scaled, cv2.COLOR_BGR2GRAY)
 denoised = cv2.blur(gray, (3, 3))
 denoised = cv2.fastNlMeansDenoising(denoised, 3, 9, 21)
 thresholded = cv2.bitwise_not(denoised)
-thresholded = cv2.adaptiveThreshold(thresholded, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, -21)
+thresholded = cv2.adaptiveThreshold(thresholded, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, -7)
 
 contour_output = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
 largest_contour, area = get_largest_contour(thresholded, contour_output)
 corners = get_contour_corners(largest_contour)
 warped = warp_mat(thresholded, corners)
 warped = cv2.bitwise_not(warped)
-#warped_thresh = cv2.adaptiveThreshold(warped, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, 21)
+output = cv2.cvtColor(warped, cv2.COLOR_GRAY2BGR)
 
 cell_width = warped.shape[1] / 9.0
 cell_height = warped.shape[0] / 9.0
-hor_padding = 0#cell_width / 10
-ver_padding = 0#cell_height / 15
 cell_area = cell_width * cell_height
 for y in range(9):
     for x in range(9):
@@ -125,28 +133,27 @@ for y in range(9):
         y1 = int(y * cell_height)
         x2 = x1 + int(cell_width)
         y2 = y1 + int(cell_height)
+        cv2.rectangle(output, (x1, y1), (x2, y2), (0, 255, 0))
         cell_mat = warped[y1:y2, x1:x2]        
         cell_mat = cv2.bitwise_not(cell_mat)
         value_contour = get_cell_value_contour(cell_mat)
-        success = False
         if value_contour is not None:
+            vx, vy, vw, vh = cv2.boundingRect(value_contour)
+            cv2.rectangle(output, (vx + x1, vy + y1), (vx + x1 + vw, vy + y1 + vh), (255, 0, 0), 2)
             roi = get_roi_from_contour(value_contour, cell_mat)
             roi = cv2.bitwise_not(roi)
-            #cv2.imshow(str(x) + ',' + str(y), roi)
-            config = ("--oem 1 --psm 10")
-            string = tess.image_to_string(roi, config=config)
+            string = tess.image_to_string(roi, lang='eng', config='--oem 0 --psm 10 -c tessedit_char_whitelist=123456789')
             value, success = int_try_parse(string)
-        if success:
-            print(value, end='')
-            #cv2.imshow(str(x) + ',' + str(y) + '  ' + str(value), roi)
-        else:
-            print(' ', end='')
-    print('')
+            if success:
+                print(value, end='')
+                cv2.putText(output, str(value), (x1 + 7, y1 + int(cell_height) - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 1)
+            #else:
+            #    cv2.imshow(str(x) + ',' + str(y) + '  ' + str(value), roi)
 
 #cv2.imshow('Gray', gray)
 #cv2.imshow('Denoised', denoised)
 #cv2.imshow('Thresholded', thresholded)
 #cv2.imshow('Contours', contour_output)
-cv2.imshow('Warped', warped)
+cv2.imshow('Output', output)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
