@@ -2,6 +2,7 @@ import cv2 as cv2
 import math as math
 import numpy as np
 import pytesseract as tess
+from board import Board
 
 CELL_BORDER_BUFFER = 3
 
@@ -137,7 +138,7 @@ def read_board(path):
                 cv2.rectangle(output, (vx + x1, vy + y1), (vx + x1 + vw, vy + y1 + vh), (255, 0, 0), 2)
                 roi = get_roi_from_contour(value_contour, cell_mat)
                 roi = cv2.bitwise_not(roi)
-                string = tess.image_to_string(roi, lang='eng', config='--oem 0 --psm 10 -c tessedit_char_whitelist=123456789 --tessdata-dir "/usr/share/tessdata"')
+                string = tess.image_to_string(roi, lang='eng', config='--oem 0 --psm 10 -c tessedit_char_whitelist=123456789')
                 value, success = int_try_parse(string)
                 if success:
                     values[x][y] = value
@@ -145,4 +146,4 @@ def read_board(path):
     #cv2.imshow('Thresholded', resize(thresh))
     #cv2.imshow('Contours', resize(contour_output))
     #cv2.imshow('Output', resize(output))
-    return values
+    return Board(values)

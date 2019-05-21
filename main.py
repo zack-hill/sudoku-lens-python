@@ -1,5 +1,15 @@
+import time
 import board_reader as board_reader
 
-board = board_reader.read_board('boards/1.jpg')
-print(board.transpose())
+start = time.time()
+board = board_reader.read_board('boards/4.jpg')
+end = time.time()
 
+print(f'Board Read in {end - start:.3f} s')
+
+start = time.time()
+board.solve()
+end = time.time()
+
+print(f'Board Solved in {end - start:.3f} s')
+print(board)
