@@ -1,15 +1,28 @@
 import time
+import numpy as np
+from board import Board
 import board_reader as board_reader
 
-start = time.time()
-board = board_reader.read_board('boards/4.jpg')
-end = time.time()
+BOARD_COUNT = 4
 
-print(f'Board Read in {end - start:.3f} s')
+def read_boards():
+    for i in range(BOARD_COUNT):
+        start = time.time()
+        values = board_reader.read_values(f'boards/{i + 1}.jpg')
+        end = time.time()
+        print(f'Board {i + 1} Read in {end - start:.3f} s')
+        np.save(f'boards/{i + 1}.npy', values)
 
-start = time.time()
-board.solve()
-end = time.time()
+def solve_boards():
+    for i in range(BOARD_COUNT):
+        values = np.load(f'boards/{i + 1}.npy')
+        board = Board(values)
 
-print(f'Board Solved in {end - start:.3f} s')
-print(board)
+        start = time.time()
+        board.solve()
+        end = time.time()
+        print(f'Board Solved in {end - start:.3f} s')
+        print(board)
+
+read_boards()
+solve_boards()

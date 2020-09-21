@@ -2,7 +2,6 @@ import cv2 as cv2
 import math as math
 import numpy as np
 import pytesseract as tess
-from board import Board
 
 CELL_BORDER_BUFFER = 3
 
@@ -103,7 +102,7 @@ def resize(img):
     ratio = img.shape[0] / img.shape[1]
     return cv2.resize(img, (int(img.shape[0] / scale), int(img.shape[1] / scale * ratio)), 0, 0, cv2.INTER_AREA)
 
-def read_board(path):
+def read_values(path):
     original = cv2.imread(path)
     h = original.shape[0]
     w = original.shape[1]
@@ -146,4 +145,4 @@ def read_board(path):
     #cv2.imshow('Thresholded', resize(thresh))
     #cv2.imshow('Contours', resize(contour_output))
     #cv2.imshow('Output', resize(output))
-    return Board(values)
+    return values
