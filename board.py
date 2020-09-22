@@ -70,7 +70,7 @@ class Board:
         if self.is_solved():
             return
         # Fallback to brute force using backtracking algorithm
-        self.__solve_using_backtracking()
+        # self.__solve_using_backtracking()
 
     def save(self, path):
         values = np.zeros(shape=(9, 9), dtype=np.int)        

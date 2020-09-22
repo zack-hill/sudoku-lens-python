@@ -6,4 +6,4 @@ This project uses OpenCV and Tesseract-OCR to detect and read a Sudoku board fro
 ## Requirements
 - NumPy - `pip install numpy`
 - OpenCV - `pip install opencv-python`
-- Tesseract OCR - `pip install pytesseract`
+- Tesseract OCR (Version 5+) - https://tesseract-ocr.github.io/tessdoc/Home.html
