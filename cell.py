@@ -1,66 +1,46 @@
+import itertools as it
+import colorama
+from colorama import Fore, Style
+colorama.init()
+
 class Cell:
-    def __init__(self, x, y, value):
-        self.x = x
-        self.y = y
-        self.initial_value = value
-        self.value = value
-        self.possible_values = set([x + 1 for x in range(9)] if value == 0 else [])
+    def __init__(self, initial_value):
         self.row = []
-        self.col = []
+        self.column = []
         self.section = []
+        self.is_starting_cell = initial_value != 0
+        if self.is_starting_cell:
+            self.value = initial_value
+            self.possible_values = []
+        else:
+            self.reset()
 
-    def __repr__(self):
-        return str(self.value)
+    def __str__(self):
+        color = ''
+        if self.is_starting_cell:
+            color = Fore.BLUE
+        elif self.value != 0:
+            color = Fore.GREEN
+        return color + str(self.value if self.value != 0 else "□") + Style.RESET_ALL
 
-    def set_row(self, row):
-        self.row = row
-
-    def set_col(self, col):
-        self.col = col
-
-    def set_section(self, section):
-        self.section = section
-
-    def remove_from_related(self):
-        if self.value == 0:
-            return
-        for cell in self.row + self.col + self.section:
-            cell.remove_possible_value(self.value)
-
-    def set_value(self, value):
-        self.value = value
-        self.possible_values.clear()
-        self.remove_from_related()
+    def reset(self):
+        self.value = 0
+        self.possible_values = list(range(1, 10))
 
     def remove_possible_value(self, value):
         if value in self.possible_values:
             self.possible_values.remove(value)
+            self.check_possible_values()
 
     def check_possible_values(self):
         if len(self.possible_values) == 1:
-            self.set_value(self.possible_values.pop())
-    
-    def check_unique_possible_values(self):
-        if self.value != 0:
-            return
-        self.check_unique_possible_value(self.row)
-        self.check_unique_possible_value(self.col)
-        self.check_unique_possible_value(self.section)
+            self.set_value(self.possible_values[0])
 
-    def check_unique_possible_value(self, cells):
-        if self.value != 0:
-            return
-        other_possible = set()
-        for cell in cells:
-            if cell == self:
-                continue
-            other_possible = other_possible.union(cell.possible_values)
-        difference = self.possible_values - other_possible
-        if len(difference) == 1:
-            self.set_value(difference.pop())
+    def set_value(self, value):
+        self.value = value
+        self.possible_values.clear()
+        self.clear_value_from_related()
 
-    def is_solved(self):
-        return self.value != 0
-
-    def is_starting_cell(self):
-        return self.initial_value != 0
+    def clear_value_from_related(self):
+        for cell in it.chain(self.row, self.column, self.section):
+            cell.remove_possible_value(self.value)
